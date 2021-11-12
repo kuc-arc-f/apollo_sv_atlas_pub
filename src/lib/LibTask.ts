@@ -7,72 +7,86 @@ export default {
   get_items :async function(){
     try {
       const client = await LibMongo.getClient();
-      const collection = client.db(process.env.MONGODB_DB_NAME).collection("tasks");
+      const dbName = LibMongo.get_db_name();
+//console.log(d);
+      const collection = client.db(dbName).collection("tasks");
       let items = await collection.find({}).toArray();
       items = LibApiFind.convertItems(items);
-      //console.log( items)
+console.log( items);
       client.close();             
       return items
     } catch (err) {
         throw new Error('Error , get_items');
     }          
   },    
-  get_item :async function(id: string){
+  getTask :async function(id: number){
     try {
-      var where = { _id: new ObjectID(id) }
-      var item = await LibMongo.get_item("tasks" , where ) 
-      var ret ={
-        item: item
-      } 
-      item.id = item._id     
-//console.log( item ) 
-      return item
+      const where = { _id: new ObjectID(id) }
+      const dbName = LibMongo.get_db_name();
+      const client = await LibMongo.getClient();
+      const collection = client.db(dbName).collection("tasks");
+      const item = await collection.findOne(where) ;
+      client.close();
+      if(item !== null){
+        item.id = item._id;
+      }  
+//console.log( item)       
+      return item;
     } catch (err) {
-      throw new Error('Error , get_item');
+      throw new Error('Error , getTask');
     }          
   },
-  add_item :async function(args: any){
+  addTask :async function(args: any){
     try {
-      var item = {
+//console.log( args); 
+      const item: any = {
         title: args.title ,  
+        content: "",
         created_at: new Date(),
       };
-      const itemOne = await LibMongo.add_item("tasks" ,item )
-      itemOne.id = itemOne._id
-//console.log( itemOne )  
-      return itemOne
+      const dbName = LibMongo.get_db_name();
+      const client = await LibMongo.getClient();
+      const collection = client.db(dbName).collection("tasks");
+      const itemOne = await collection.insertOne(item); 
+      client.close();
+      item.id = item._id   
+//console.log(item); 
+      return item;
     } catch (err) {
-      throw new Error('Error , add_item');
+      throw new Error('Error , addTask');
     }          
   },
-  update_item :async function(args: any){
+  updateTask :async function(args: any){
     try {
-      var id = args.id
-      var item = {
+//console.log( args); 
+      const where = {"_id": new ObjectID( args.id )};
+      const item: any = {
         title: args.title ,  
       };
-  //console.log(item);
-      var where = {"_id": new ObjectID( id )};
-      await LibMongo.update_item("tasks" , where, item )
-      var ret ={
-        item: item
-      }      
-      return args
+      const dbName = LibMongo.get_db_name();
+      const client = await LibMongo.getClient();
+      const collection = client.db(dbName).collection("tasks");
+      await collection.updateOne(where, { $set: item })
+      client.close();
+//console.log(item); 
+      return args;
     } catch (err) {
-      throw new Error('Error , update_item');
-    }          
-  },
-  delete_item :async function(args: any){
-    try {
-      var id = args.id
-      var where = { "_id": new ObjectID( id ) };
-      await LibMongo.delete_item("tasks" , where )
-      var ret ={
-        id: id
-      }      
-      return args
-    } catch (err) {
-      throw new Error('Error , delete_item');
+      throw new Error('Error , updateTask');
     }          
   },  
+  deleteTask :async function(args: any){
+    try {
+console.log( args); 
+      const dbName = LibMongo.get_db_name();
+      const where = {"_id": new ObjectID( args.id )};
+      const client = await LibMongo.getClient();
+      const collection = client.db(dbName).collection("tasks");
+      await collection.deleteOne(where) 
+      client.close();
+//console.log(item); 
+      return args;
+    } catch (err) {
+      throw new Error('Error , deleteTask');
+    }          
+  },             
 }
